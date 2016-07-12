@@ -1,5 +1,5 @@
 # check_pakfire
-``check_pakfire`` is a Nagios / Icinga plugin for checking [IPFire](http://www.ipfire.org) Pakfire updates
+``check_pakfire`` is a Nagios / Icinga plugin for checking [IPFire](http://www.ipfire.org) Pakfire updates.
 
 # Requirements
 I successfully tested the plugin with **IPFire 2.x**. I'm not sure whether IPFire 3.x comes with a new Pakfire architecture - so, use this on newer versions at your own risk. ;-)

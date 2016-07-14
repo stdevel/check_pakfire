@@ -156,7 +156,7 @@ if __name__ == "__main__":
 	desc='''%prog is used to check a IPFire host for pakfire updates (core updates and additional packages).
 	
 	Checkout the GitHub page for updates: https://github.com/stdevel/check_pakfire'''
-	parser = OptionParser(description=desc,version="%prog version 1.0.0")
+	parser = OptionParser(description=desc,version="%prog version 1.0.1")
 	
 	genOpts = OptionGroup(parser, "Generic options")
 	netOpts = OptionGroup(parser, "Network options")

@@ -131,10 +131,10 @@ def checkUpdates():
 			#everything up2date
 			print "OK: Core Update '{0}' and packages for release '{1}' up2date!".format(sysUpd, sysRel)
 			exit(0)
-		if boolCore == True and boolPKgs == False:
+		if boolCore == True and boolPkgs == False:
 			print "WARNING: Core Update '{0}' for release '{1}' up2date, but {2} package(s) outdated!".format(sysUpd, sysRel, len(outdated))
 			exit(1)
-		if boolCore == False and boolPKgs == True:
+		if boolCore == False and boolPkgs == True:
 			print "WARNING: Core Update '{0}' for release '{1}' outdated (current update: {2}), but packages up2date!".format(sysUpd, sysRel, curUpd)
 			exit(1)
 			

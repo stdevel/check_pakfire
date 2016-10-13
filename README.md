@@ -7,7 +7,7 @@ I successfully tested the plugin with **IPFire 2.x**. I'm not sure whether IPFir
 No additional Python packages are required - just deploy the script and use it.
 
 # Usage
-By default, the script checks for core updates - it is also possible to check for updates of installed Pakfire packages (*``-i`` / ``--include-packages`` parameters*).
+By default, the script checks for core updates and also packages upgrades - it is also possible to only check core updates (*``-e`` / ``--exclude-packages`` parameters*). Gathering performance data (*outdated packages*) can be useful when monitoring a big amount of IPFire systems.
 
 The following parameters can be specified:
 
@@ -15,21 +15,29 @@ The following parameters can be specified:
 |:----------|:------------|
 | `-d` / `--debug` | enable debugging outputs (*default: no*) |
 | `-h` / `--help` | shows help and quits |
-| `-i` / `--include-packages` | also checks for package updates (*default: only core updates are checked*) |
+| `-e` / `--exclude-packages` | disables checking for package updates (*default: no*) |
 | `-m` / `--mirror` | defines one or multiple mirrors (*default: system mirror list*) |
+| `-w` / `--packages-warning` | defines warning threshold for outdated packages (*default: 5*) |
+| `-c` / `--packages-critical` | defines warning threshold for outdated packages (*default: 10*) |
 | `--version` | prints programm version and quits |
 
 ## Examples
-The following example checks for core updates:
+The following example checks for core updates only:
 ```
-$ ./check_pakfire.py 
-OK: Core Update '102' for release '2.19' up2date!
+$ ./check_pakfire.py  -e
+OK: Core Update '105' for release '2.19' up2date!
 ```
 
 A IPFire host with some outdated packages:
 ```
-$ ./check_pakfire.py -i
-WARNING: Core Update '102' for release '2.19' up2date, but 3 package(s) outdated!
+$ ./check_pakfire.py
+WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) outdated!
+```
+
+An updates IPFire host with performance data:
+```
+$ ./check_pakfire.py
+OK: Core Update '105' and packages for release '2.19' up2date! | 'outdated_packages'=0.0;5.0;10.0;;
 ```
 
 # Installation
@@ -52,6 +60,6 @@ define service{
         use                             generic-service
         host_name                       st-ipfire02
         service_description             DIAG: Updates
-        check_command                   check_nrpe_pakfire!-i
+        check_command                   check_nrpe_pakfire!-P
 }
 ```

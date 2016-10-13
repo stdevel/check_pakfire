@@ -175,7 +175,7 @@ if __name__ == "__main__":
 	gen_opts.add_option("-d", "--debug", dest="debug", default=False, action="store_true", help="enable debugging outputs")
 	
 	#-P / --show-perfdata
-	gen_opts.add_option("-P", "--show-perfdata", dest="show_perfdata", default=False, action="store_true", help="enables performance data, requires -i (default: no)")
+	gen_opts.add_option("-P", "--show-perfdata", dest="show_perfdata", default=False, action="store_true", help="enables performance data (default: no)")
 	
 	#-e / --exclude-packages
 	pkg_opts.add_option("-e", "--exclude-packages", dest="exclude_pkgs", default=False, action="store_true", help="disables checking for package updates (default: no)")

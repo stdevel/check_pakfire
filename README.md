@@ -17,6 +17,7 @@ The following parameters can be specified:
 | `-h` / `--help` | shows help and quits |
 | `-e` / `--exclude-packages` | disables checking for package updates (*default: no*) |
 | `-m` / `--mirror` | defines one or multiple mirrors (*default: system mirror list*) |
+| `-P` / `--show-perfdata` | enables performance data (*default: no*) |
 | `-w` / `--packages-warning` | defines warning threshold for outdated packages (*default: 5*) |
 | `-c` / `--packages-critical` | defines warning threshold for outdated packages (*default: 10*) |
 | `--version` | prints programm version and quits |
@@ -34,7 +35,7 @@ $ ./check_pakfire.py
 WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) outdated!
 ```
 
-An updates IPFire host with performance data:
+An updated IPFire host with performance data:
 ```
 $ ./check_pakfire.py
 OK: Core Update '105' and packages for release '2.19' up2date! | 'outdated_packages'=0.0;5.0;10.0;;

@@ -33,7 +33,7 @@ def get_system_version():
 	#return release and 'cleaned' core update
 	if options.debug: print "RELEASE: {0}, UPDATE: {1}".format(rel.group(0), core.group(0).replace("core", ""))
 	return [rel.group(0), core.group(0).replace("core", "")]
-	
+
 def get_mirrorlist():
 	#get system-wide mirror list
 	f_list = open('/opt/pakfire/db/lists/server-list.db', 'r')
@@ -45,7 +45,7 @@ def get_mirrorlist():
 			list.append("http://{0}".format( line[line.find(";")+1:line.rfind(";")].replace(";", "/") ))
 	if options.debug: print "MIRRORLIST: {0}".format(list)
 	return list
-	
+
 def get_recent_versions():
 	#get recent version(s) (core update and packages)
 	for mirr in mirr_list:
@@ -145,7 +145,9 @@ def check_updates():
 		if bool_core == False and bool_pkgs == True:
 			print "WARNING: Core Update '{0}' for release '{1}' outdated (current update: {2}), but packages up2date!{3}".format(sys_upd, sys_rel, cur_upd, perfdata)
 			exit(1)
-			
+		else:
+			print "CRITICAL: Core Update '{0}' for release '{1}' outdated (current update: {2}) and {3} package(s) outdated!{4}".format(sys_upd, sys_rel, cur_upd, len(outdated), perfdata)
+			exit(2)
 	else:
 		#only check core update
 		if bool_core == True:
@@ -164,7 +166,7 @@ if __name__ == "__main__":
 	desc='''%prog is used to check a IPFire host for pakfire updates (core updates and additional packages).
 	
 	Checkout the GitHub page for updates: https://github.com/stdevel/check_pakfire'''
-	parser = OptionParser(description=desc,version="%prog version 1.0.6")
+	parser = OptionParser(description=desc,version="%prog version 1.0.7")
 	
 	gen_opts = OptionGroup(parser, "Generic options")
 	net_opts = OptionGroup(parser, "Network options")
@@ -207,6 +209,9 @@ if __name__ == "__main__":
 	
 	#get recent versions
 	(cur_upd, cur_pkgs) = get_recent_versions()
+	
+	#print cur_upd
+	#print cur_pkgs
 	
 	#check for updates
 	check_updates()

@@ -8,11 +8,11 @@ type: Plugin
 license: gplv3
 releases: 
   - 
-    name: 1.0.6
-    description: "1.0.6 Release"
+    name: 1.0.7
+    description: "1.0.7 Release"
     files: 
       - 
         name: check_pakfire.py
         url: "file:///check_pakfire.py"
-        description: "Release 1.0.6"
-        checksum: 0491eda20a54fd5b048c4d3a9dd03870
+        description: "Release 1.0.7"
+        checksum: 80496c50ff28e51df92d8bc1cae89fde

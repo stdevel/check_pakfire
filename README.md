@@ -15,6 +15,7 @@ The following parameters can be specified:
 |:----------|:------------|
 | `-d` / `--debug` | enable debugging outputs (*default: no*) |
 | `-h` / `--help` | shows help and quits |
+| `-l` / `--list-packages` | lists outdated packages (*default: no*) |
 | `-e` / `--exclude-packages` | disables checking for package updates (*default: no*) |
 | `-m` / `--mirror` | defines one or multiple mirrors (*default: system mirror list*) |
 | `-P` / `--show-perfdata` | enables performance data (*default: no*) |
@@ -33,6 +34,12 @@ A IPFire host with some outdated packages:
 ```
 $ ./check_pakfire.py
 WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) outdated!
+```
+
+The same example with listing the outdateed packages:
+```
+$ ./check_pakfire.py -l
+WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) (hostapd, nagios, libgiertz) outdated!
 ```
 
 An updated IPFire host with performance data:

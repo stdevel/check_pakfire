@@ -135,18 +135,24 @@ def check_updates():
 	
 	#exit with check result
 	if options.exclude_pkgs == False:
+		#set list of outdated packages
+		if options.list_pkgs:
+			pkg_list = " ({0})".format(", ".join(outdated))
+		else:
+			pkg_list = ""
+
 		if bool_core == True and bool_pkgs == True:
 			#everything up2date
 			print "OK: Core Update '{0}' and packages for release '{1}' up2date!{2}".format(sys_upd, sys_rel, perfdata)
 			exit(0)
 		if bool_core == True and bool_pkgs == False:
-			print "WARNING: Core Update '{0}' for release '{1}' up2date, but {2} package(s) outdated!{3}".format(sys_upd, sys_rel, len(outdated), perfdata)
+			print "WARNING: Core Update '{0}' for release '{1}' up2date, but {2} package(s){3} outdated!{4}".format(sys_upd, sys_rel, len(outdated), pkg_list, perfdata)
 			exit(1)
 		if bool_core == False and bool_pkgs == True:
 			print "WARNING: Core Update '{0}' for release '{1}' outdated (current update: {2}), but packages up2date!{3}".format(sys_upd, sys_rel, cur_upd, perfdata)
 			exit(1)
 		else:
-			print "CRITICAL: Core Update '{0}' for release '{1}' outdated (current update: {2}) and {3} package(s) outdated!{4}".format(sys_upd, sys_rel, cur_upd, len(outdated), perfdata)
+			print "CRITICAL: Core Update '{0}' for release '{1}' outdated (current update: {2}) and {3} package(s){4} outdated!{5}".format(sys_upd, sys_rel, cur_upd, len(outdated), pkg_list, perfdata)
 			exit(2)
 	else:
 		#only check core update
@@ -166,7 +172,7 @@ if __name__ == "__main__":
 	desc='''%prog is used to check a IPFire host for pakfire updates (core updates and additional packages).
 	
 	Checkout the GitHub page for updates: https://github.com/stdevel/check_pakfire'''
-	parser = OptionParser(description=desc,version="%prog version 1.0.7")
+	parser = OptionParser(description=desc,version="%prog version 1.0.8")
 	
 	gen_opts = OptionGroup(parser, "Generic options")
 	net_opts = OptionGroup(parser, "Network options")
@@ -181,6 +187,9 @@ if __name__ == "__main__":
 	#-P / --show-perfdata
 	gen_opts.add_option("-P", "--show-perfdata", dest="show_perfdata", default=False, action="store_true", help="enables performance data, requires -i (default: no)")
 	
+	#-l / --list-packages
+	pkg_opts.add_option("-l", "--list-packages", dest="list_pkgs", default=False, action="store_true", help="lists outdated plugins (default: no)")
+
 	#-e / --exclude-packages
 	pkg_opts.add_option("-e", "--exclude-packages", dest="exclude_pkgs", default=False, action="store_true", help="disables checking for package updates (default: no)")
 	

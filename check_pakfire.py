@@ -188,7 +188,7 @@ if __name__ == "__main__":
 	gen_opts.add_option("-P", "--show-perfdata", dest="show_perfdata", default=False, action="store_true", help="enables performance data, requires -i (default: no)")
 	
 	#-l / --list-packages
-	pkg_opts.add_option("-l", "--list-packages", dest="list_pkgs", default=False, action="store_true", help="lists outdated plugins (default: no)")
+	pkg_opts.add_option("-l", "--list-packages", dest="list_pkgs", default=False, action="store_true", help="lists outdated packages (default: no)")
 
 	#-e / --exclude-packages
 	pkg_opts.add_option("-e", "--exclude-packages", dest="exclude_pkgs", default=False, action="store_true", help="disables checking for package updates (default: no)")

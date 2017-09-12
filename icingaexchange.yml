@@ -15,4 +15,4 @@ releases:
         name: check_pakfire.py
         url: "file:///check_pakfire.py"
         description: "Release 1.0.8"
-        checksum: 28fd1ec593f0f9ce0f1d70642647dc13
+        checksum: 90a311d470a4b3d5f1c8be164c62da95

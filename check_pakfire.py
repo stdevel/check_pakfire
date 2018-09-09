@@ -92,6 +92,7 @@ def get_recent_versions():
 def get_local_pkg_versions():
 	#get local installed package versions
 	pkgs={}
+	my_name=""
 	for root, dirs, files in os.walk("/opt/pakfire/db/installed", topdown=False):
 		for name in files:
 			f_pkg = open(os.path.join(root, name), 'r')

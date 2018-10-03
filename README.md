@@ -36,7 +36,7 @@ $ ./check_pakfire.py
 WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) outdated!
 ```
 
-The same example with listing the outdateed packages:
+The same example with listing the outdated packages:
 ```
 $ ./check_pakfire.py -l
 WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) (hostapd, nagios, libgiertz) outdated!
@@ -49,10 +49,12 @@ OK: Core Update '105' and packages for release '2.19' up2date! | 'outdated_packa
 ```
 
 # Installation
-To install the plugin, move the Python script into the appropriate directory and create a **NRPE configuration**.
+To install the plugin, move the Python script into the appropriate directory and create a **configuration**.
 
 # Configuration
-Inside Nagios / Icinga you will need to configure a remote check command, e.g. for NRPE:
+
+## Nagios / Icinga 1.x
+Within Nagios / Icinga you will need to configure a remote check command, e.g. for NRPE:
 ```
 #check_nrpe_pakfire
 define command{
@@ -70,4 +72,37 @@ define service{
         service_description             DIAG: Updates
         check_command                   check_nrpe_pakfire!-P
 }
+```
+
+## Icinga2
+Define a service like this:
+```
+apply Service "DIAG: Updates" {
+  import "generic-service"
+  check_command = "by_ssh"
+  vars.by_ssh_command = [ "/opt/check_pakfire.py", "-P" ]
+  vars.by_ssh_port = host.vars.ssh_port
+  vars.by_ssh_logname = "icinga"
+  assign where host.vars.os == "Linux" && host.vars.app == "router"
+}
+```
+
+Define SSH port and application for your IPFire host:
+```
+object Host "st-ipfire02.stankowic.loc" {
+  import "generic-host"
+
+  address = "xxx"
+
+  vars.os = "Linux"
+  vars.app = "router"
+
+  vars.ssh_port = 222
+}
+```
+
+Validate the configuration and reload the Icinga2 daemon:
+```
+# icinga2 daemon -C
+# service icinga2 reload
 ```

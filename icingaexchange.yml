@@ -6,7 +6,16 @@ vendor: Linux
 target: Operating System
 type: Plugin
 license: gplv3
-releases: 
+releases:
+  -
+    name: 1.0.9
+    description: "1.0.9 Release"
+    files:
+      -
+        name: check_pakfire.py
+        url: "file:///check_pakfire.py"
+        description: "Release 1.0.9"
+        checksum: 3e2b13367804d927d1d27297db6d291b
   - 
     name: 1.0.8
     description: "1.0.8 Release"

@@ -40,9 +40,9 @@ def get_mirrorlist():
 	#finding all the mirrors
 	list = []
 	for line in f_list.readlines():
-		if "HTTP;" in line.rstrip():
+		if "HTTPS;" in line.rstrip():
 			#add mirror
-			list.append("http://{0}".format( line[line.find(";")+1:line.rfind(";")].replace(";", "/") ))
+			list.append("https://{0}".format( line[line.find(";")+1:line.rfind(";")].replace(";", "/") ))
 	if options.debug: print "MIRRORLIST: {0}".format(list)
 	return list
 
@@ -62,7 +62,7 @@ def get_recent_versions():
 				if "core_release" in line:
 					c_rel = re.search('[0-9]{1,3}', line)
 					if options.debug: print "INFO: Recent core update is '{0}'".format(c_rel.group(0))
-			
+
 			#get package versions
 			pkgs={}
 			url = mirr+"/lists/packages_list.db"
@@ -113,7 +113,7 @@ def check_updates():
 	perfdata=""
 	global sys_upd
 	global cur_upd
-	
+
 	#check core update
 	if float(cur_upd) > float(sys_upd):
 		#newer core update
@@ -123,9 +123,9 @@ def check_updates():
 		#core up2date
 		if options.debug: print "Installed core update '{0}' is up2date.".format(sys_upd)
 		bool_core = True
-	
+
 	#TODO: counter/diff warn/crit pkgs!
-	
+
 	#check package updates
 	if options.exclude_pkgs == False:
 		#get outdates packages
@@ -135,7 +135,7 @@ def check_updates():
 		else: bool_pkgs = True
 		#get performance data
 		if options.show_perfdata: perfdata = " | 'outdated_packages'={0};{1};{2};; 'system_updates'={3};;;;".format(float(len(outdated)), float(options.pkgs_warn), float(options.pkgs_crit), int(int(cur_upd)-int(sys_upd)))
-	
+
 	#exit with check result
 	if options.exclude_pkgs == False:
 		#set list of outdated packages
@@ -167,63 +167,63 @@ def check_updates():
 			#core outdated
 			print "WARNING: Core Update '{0}' for release '{1}' outdated! (current update: {2}){3}".format(sys_upd, sys_rel, cur_upd, perfdata)
 			exit(1)
-	
+
 	return False
 
 if __name__ == "__main__":
 	#define description, version and load parser
 	desc='''%prog is used to check a IPFire host for pakfire updates (core updates and additional packages).
-	
+
 	Checkout the GitHub page for updates: https://github.com/stdevel/check_pakfire'''
 	parser = OptionParser(description=desc,version="%prog version 1.0.8")
-	
+
 	gen_opts = OptionGroup(parser, "Generic options")
 	net_opts = OptionGroup(parser, "Network options")
 	pkg_opts = OptionGroup(parser, "Package options")
 	parser.add_option_group(gen_opts)
 	parser.add_option_group(net_opts)
 	parser.add_option_group(pkg_opts)
-	
+
 	#-d / --debug
 	gen_opts.add_option("-d", "--debug", dest="debug", default=False, action="store_true", help="enable debugging outputs")
-	
+
 	#-P / --show-perfdata
 	gen_opts.add_option("-P", "--show-perfdata", dest="show_perfdata", default=False, action="store_true", help="enables performance data, requires -i (default: no)")
-	
+
 	#-l / --list-packages
 	pkg_opts.add_option("-l", "--list-packages", dest="list_pkgs", default=False, action="store_true", help="lists outdated packages (default: no)")
 
 	#-e / --exclude-packages
 	pkg_opts.add_option("-e", "--exclude-packages", dest="exclude_pkgs", default=False, action="store_true", help="disables checking for package updates (default: no)")
-	
+
 	#-w / --packages-warning
 	pkg_opts.add_option("-w", "--packages-warning", dest="pkgs_warn", default=5, action="store", metavar="NUMBER", help="defines warning threshold for outdated packages (default: 5)")
-	
+
 	#-c / --packages-critical
 	pkg_opts.add_option("-c", "--packages-critical", dest="pkgs_crit", default=10, action="store", metavar="NUMBER", help="defines critical threshold for outdated packages (default: 10)")
-	
+
 	#-m / --mirror
 	net_opts.add_option("-m", "--mirror", dest="mirrors", default=[], action="append", metavar="SERVER", help="defines one or multiple mirrors (default: system mirror list)")
-	
+
 	#parse arguments
 	(options, args) = parser.parse_args()
-	
+
 	#debug outputs
 	if options.debug: print "OPTIONS: {0}".format(options)
-	
+
 	#get system release, core update and package versions
 	(sys_rel, sys_upd) = get_system_version()
 	sys_pkgs = get_local_pkg_versions()
-	
+
 	#get mirror list
 	if len(options.mirrors) >= 1: mirr_list = options.mirrors
 	else: mirr_list = get_mirrorlist()
-	
+
 	#get recent versions
 	(cur_upd, cur_pkgs) = get_recent_versions()
-	
+
 	#print cur_upd
 	#print cur_pkgs
-	
+
 	#check for updates
 	check_updates()

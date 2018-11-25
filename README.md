@@ -15,37 +15,32 @@ The following parameters can be specified:
 |:----------|:------------|
 | `-d` / `--debug` | enable debugging outputs (*default: no*) |
 | `-h` / `--help` | shows help and quits |
-| `-l` / `--list-packages` | lists outdated packages (*default: no*) |
 | `-e` / `--exclude-packages` | disables checking for package updates (*default: no*) |
 | `-m` / `--mirror` | defines one or multiple mirrors (*default: system mirror list*) |
 | `-P` / `--show-perfdata` | enables performance data (*default: no*) |
-| `-w` / `--packages-warning` | defines warning threshold for outdated packages (*default: 5*) |
-| `-c` / `--packages-critical` | defines warning threshold for outdated packages (*default: 10*) |
+| `-w` / `--packages-warning` | defines warning threshold for outdated packages (*default: 1*) |
+| `-c` / `--packages-critical` | defines warning threshold for outdated packages (*default: 5*) |
+| `-W` / `--core-warning` | defines warning threshold for outdated core (*default: 1*) |
+| `-C` / `--core-critical` | defines warning threshold for outdated core (*default: 3*) |
 | `--version` | prints programm version and quits |
 
 ## Examples
 The following example checks for core updates only:
 ```
-$ ./check_pakfire.py  -e
-OK: Core Update '105' for release '2.19' up2date!
+$ ./check_pakfire.py -e
+OK: Core update (124) up2date
 ```
 
 A IPFire host with some outdated packages:
 ```
 $ ./check_pakfire.py
-WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) outdated!
-```
-
-The same example with listing the outdated packages:
-```
-$ ./check_pakfire.py -l
-WARNING: Core Update '105' for release '2.19' up2date, but 3 package(s) (hostapd, nagios, libgiertz) outdated!
+WARNING: Core update (124) up2date, packages outdated (linue-pae, lcd4linux)
 ```
 
 An updated IPFire host with performance data:
 ```
 $ ./check_pakfire.py
-OK: Core Update '105' and packages for release '2.19' up2date! | 'outdated_packages'=0.0;5.0;10.0;;
+WARNING: Core update (124) up2date, packages outdated (linue-pae, lcd4linux) | 'system_updates'=0;;;; 'outdated_packages'=2.0;1.0;5.0;;
 ```
 
 # Installation
@@ -68,7 +63,7 @@ Configure the check for a particular host, e.g.:
 #DIAG: Updates
 define service{
         use                             generic-service
-        host_name                       st-ipfire02
+        host_name                       st-ipfire03
         service_description             DIAG: Updates
         check_command                   check_nrpe_pakfire!-P
 }
@@ -89,7 +84,7 @@ apply Service "DIAG: Updates" {
 
 Define SSH port and application for your IPFire host:
 ```
-object Host "st-ipfire02.stankowic.loc" {
+object Host "st-ipfire03.stankowic.loc" {
   import "generic-host"
 
   address = "xxx"

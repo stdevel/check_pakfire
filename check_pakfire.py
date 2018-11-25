@@ -1,271 +1,370 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+A Nagios/Icinga plugin for checking a IPFire host
+# for available Pakfire updates
+"""
 
-# check_pakfire.py - a script for checking a IPFire
-# host for available pakfire updates
-#
-# 2018 By Christian Stankowic
-# <info at cstan dot io>
-# https://github.com/stdevel
-#
-
-from optparse import OptionParser, OptionGroup
+import argparse
+import logging
 import re
-import urllib2
 import os
+import urllib2
 
-# some script-wide variables
-sys_rel = ""
-sys_upd = ""
-mirr_list = []
-cur_upd = ""
-cur_pkgs = {}
-sys_pkgs = {}
+# some global variables
+__version__ = "1.2.0"
+LOGGER = logging.getLogger('check_pakfire')
+"""
+logging: Logger instance
+"""
+LOG_LEVEL = None
+"""
+logging: Logger level
+"""
+MIRROR_LIST = []
+"""
+str: Mirror list
+"""
+CORE_SYSTEM = 0
+"""
+str: Installed core update
+"""
+CORE_RECENT = 0
+"""
+str: Recent core update
+"""
+PACKAGES_SYSTEM = ""
+"""
+str: Installed package list
+"""
+PACKAGES_RECENT = ""
+"""
+str: Recent package list
+"""
+RETURN_CODE = 0
+"""
+int: Nagios/Icinga return code
+"""
 
 
 def get_system_version():
-    # get system release and core update
-    f_rel = open('/etc/system-release', 'r')
-    s_rel = f_rel.readline().strip()
-    # define release and core version
-    rel = re.search('2.[1-9]{1,2}', s_rel)
-    core = re.search('core[0-9]{1,3}', s_rel)
-    # return release and 'cleaned' core update
-    if options.debug:
-        print "RELEASE: {0}, UPDATE: {1}".format(rel.group(0), core.group(0).replace("core", ""))
-    return [rel.group(0), core.group(0).replace("core", "")]
+    """
+    Gets system release and core update
+    :return: system release, core update
+    """
 
-
-def get_mirrorlist():
-    # get system-wide mirror list
-    f_list = open('/opt/pakfire/db/lists/server-list.db', 'r')
-    # finding all the mirrors
-    mirror_list = []
-    for line in f_list.readlines():
-        if "HTTPS;" in line.rstrip():
-            # add mirror
-            mirror_list.append("https://{0}".format(line[line.find(";") + 1:line.rfind(";")].replace(";", "/")))
-    if options.debug:
-        print "MIRRORLIST: {0}".format(mirror_list)
-    return mirror_list
-
-
-def get_recent_versions():
-    # get recent version(s) (core update and packages)
-    pkgs = {}
-    c_rel = None
-    for mirr in mirr_list:
-        # try a mirror
-        try:
-            # get core update version
-            url = mirr + "/lists/core-list.db"
-            if options.debug:
-                print "INFO: Accessing URL '{0}'".format(url)
-            req = urllib2.Request(url)
-            res = urllib2.urlopen(req)
-            core_list = res.read()
-            core_list = core_list.split()
-            for line in core_list:
-                if "core_release" in line:
-                    c_rel = re.search('[0-9]{1,3}', line)
-                    if options.debug:
-                        print "INFO: Recent core update is '{0}'".format(c_rel.group(0))
-
-            # get package versions
-            url = mirr + "/lists/packages_list.db"
-            if options.debug:
-                print "INFO: Accessing URL '{0}'".format(url)
-            req = urllib2.Request(url)
-            res = urllib2.urlopen(req)
-            core_list = res.read()
-            core_list = core_list.split()
-            for line in core_list:
-                if ";" in line:
-                    # get package name and version, add to cache
-                    pkg = line[:line.find(';')]
-                    vers = line[line.find(';') + 1:len(line) - 1].replace(";", ".")
-                    if options.debug:
-                        print "PKG: {0}, VERSION: {1}".format(pkg, vers)
-                    pkgs.update({pkg: vers})
-            # stahp if we got the information
-            if c_rel.group(0) != "" and len(pkgs) > 0:
-                break
-        except:
-            if options.debug:
-                print "ERROR: Unable to validate mirror '{0}'".format(mirr)
-    # return value or die in a fire
     try:
-        return c_rel.group(0), pkgs
-    except:
-        print "UNKNOWN: No mirror could be reached for validating updates (hint: proxy or mirror list invalid?)"
+        release_file = open('/etc/system-release', 'r')
+        release_str = release_file.readline().strip()
+        # define release and core version
+        release_system = re.search('2.[1-9]{1,2}', release_str)
+        core_system = re.search('core[0-9]{1,3}', release_str)
+        # return release and 'cleaned' core update
+        LOGGER.debug(
+            "System release: %s, System update: %s",
+            release_system.group(0), core_system.group(0).replace("core", "")
+        )
+        return [release_system.group(0), core_system.group(0).replace("core", "")]
+    except IOError:
+        LOGGER.error("System release file not found (is this really a IPFire system?!)")
         exit(3)
 
 
-def get_local_pkg_versions():
-    # get local installed package versions
-    pkgs = {}
-    my_name = ""
-    my_vers = ""
-    my_rel = ""
+def get_mirror_list():
+    """
+    Retrieves the system-wide Pakfire mirror list
+
+    :return: mirror list
+    """
+    mirror_list_file = open('/opt/pakfire/db/lists/server-list.db', 'r')
+    # finding all the mirrors
+    mirrors = []
+    for line in mirror_list_file.readlines():
+        if "HTTPS;" in line.rstrip():
+            # add mirror
+            mirrors.append(
+                "https://{0}".format(line[line.find(";") + 1:line.rfind(";")].replace(";", "/"))
+            )
+    LOGGER.debug("Mirror list: %s", mirrors)
+    return mirrors
+
+
+def get_local_package_versions():
+    """
+    Retrieves a list of local installed package versions
+    :return: package list
+    """
+    packages_local = {}
+    package_name = ""
+    package_version = ""
+    package_release = ""
     for root, dirs, files in os.walk("/opt/pakfire/db/installed", topdown=False):
         for name in files:
             f_pkg = open(os.path.join(root, name), 'r')
             for line in f_pkg.readlines():
                 if "Name" in line.rstrip():
-                    my_name = line.rstrip().replace("Name: ", "")
+                    package_name = line.rstrip().replace("Name: ", "")
                 if "ProgVersion" in line.rstrip():
-                    my_vers = line.rstrip().replace("ProgVersion: ", "")
+                    package_version = line.rstrip().replace("ProgVersion: ", "")
                 if "Release" in line.rstrip():
-                    my_rel = line.rstrip().replace("Release: ", "")
+                    package_release = line.rstrip().replace("Release: ", "")
             # add if not core-upgrade (core updates are checked in a different way)
-            if my_name != "core-upgrade":
-                if options.debug:
-                    print "LPKG: {0}, VERSION: {1}".format(my_name, my_vers + "." + my_rel)
-                pkgs.update({my_name: my_vers + "." + my_rel})
-    return pkgs
+            if package_name != "core-upgrade":
+                LOGGER.debug(
+                    "Local package: %s, version: %s", package_name,
+                    package_version + "." + package_release
+                )
+                packages_local.update({package_name: package_version + "." + package_release})
+    return packages_local
+
+
+def get_recent_versions():
+    """
+    Retrieves recent IPFire Core Update and package versions
+    :return: version list
+    """
+    packages_recent = {}
+    core_recent = None
+    for mirror in MIRROR_LIST:
+        # try a mirror
+        LOGGER.debug("Trying mirror '%s'", mirror)
+        try:
+            # get core update version
+            url = mirror + "/lists/core-list.db"
+            LOGGER.debug("Accessing URL '%s'", url)
+            request = urllib2.Request(url)
+            result = urllib2.urlopen(request)
+            core_list = result.read()
+            core_list = core_list.split()
+            for line in core_list:
+                if "core_release" in line:
+                    core_recent = re.search('[0-9]{1,3}', line)
+                    LOGGER.debug(
+                        "Recent core update is '%s'", core_recent.group(0)
+                    )
+
+            # get package versions
+            url = mirror + "/lists/packages_list.db"
+            LOGGER.debug("Accessing URL '%s'", url)
+            request = urllib2.Request(url)
+            result = urllib2.urlopen(request)
+            packages_list = result.read()
+            packages_list = packages_list.split()
+            for line in packages_list:
+                if ";" in line:
+                    # get package name and version, add to cache
+                    this_package = line[:line.find(';')]
+                    this_version = line[line.find(';') + 1:len(line) - 1].replace(";", ".")
+                    LOGGER.debug(
+                        "Recent package: %s, version: {%s}", this_package, this_version
+                    )
+                    packages_recent.update({this_package: this_version})
+            # stop if we got the information
+            if core_recent.group(0) != "" and not packages_recent:
+                break
+        except IOError as err:
+            LOGGER.error(
+                "Unable to validate mirror '%s': '%s'", mirror, str(err)
+            )
+    # return value or die in a fire
+    try:
+        return core_recent.group(0), packages_recent
+    except AttributeError:
+        print "UNKNOWN: No mirror could be reached for validating " \
+              "updates (hint: proxy or mirror list invalid?)"
+        exit(3)
 
 
 def check_updates():
+    """
+    Checks Core and package updates and returns Nagios/Icinga result data
+    """
     # check _all_ the updates!
     perfdata = ""
-    global sys_upd
-    global cur_upd
-    outdated = {}
-    bool_pkgs = False
+    packages_outdated = {}
+    LOGGER.debug("Checking updates")
 
     # check core update
-    if float(cur_upd) > float(sys_upd):
-        # newer core update
-        if options.debug:
-            print "Installed core update '{0}' is older than most recent one '{1}'.".format(sys_upd, cur_upd)
-        bool_core = False
+    core_difference = int(CORE_RECENT) - int(CORE_SYSTEM)
+    if core_difference >= OPTIONS.core_critical:
+        status_message = "Core update ({0}) outdated ({1})".format(CORE_SYSTEM, CORE_RECENT)
+        set_return_code(2)
+    elif core_difference >= OPTIONS.core_warning:
+        status_message = "Core update ({0}) outdated ({1})".format(CORE_SYSTEM, CORE_RECENT)
+        set_return_code(1)
     else:
-        # core up2date
-        if options.debug:
-            print "Installed core update '{0}' is up2date.".format(sys_upd)
-        bool_core = True
-
-    # TODO: counter/diff warn/crit pkgs!
+        status_message = "Core update ({0}) up2date".format(CORE_SYSTEM)
 
     # check package updates
-    if options.exclude_pkgs is False:
-        # get outdated packages
-        outdated = [key for key, value in sys_pkgs.items() if value != cur_pkgs.get(key)]
-        # TODO: wtf
-        if len(outdated) > 0:
-            bool_pkgs = False
+    if not OPTIONS.packages_exclude:
+        packages_outdated = [key for key, value in PACKAGES_SYSTEM.items() if value != PACKAGES_RECENT.get(key)]
+        packages_outdated_list = "{0}".format(", ".join(packages_outdated))
+        LOGGER.debug("Outdated packages: (%s)", packages_outdated_list)
+
+        # compare thresholds
+        if len(packages_outdated) >= OPTIONS.packages_critical:
+            # critical threshold exceeded
+            status_message = "{0}, packages outdated ({1})".format(
+                status_message, packages_outdated_list
+            )
+            set_return_code(2)
+        elif len(packages_outdated) >= OPTIONS.packages_warning:
+            # warning threshold exceeded
+            status_message = "{0}, packages outdated ({1})".format(
+                status_message, packages_outdated_list
+            )
+            set_return_code(1)
+        elif not packages_outdated:
+            # packages up2date
+            status_message = "{0}, packages up2date".format(status_message)
         else:
-            bool_pkgs = True
-        # get performance data
-        if options.show_perfdata:
-            perfdata = " | 'outdated_packages'={0};{1};{2};; 'system_updates'={3};;;;".format(
-                float(len(outdated)), float(options.pkgs_warn),
-                float(options.pkgs_crit), int(int(cur_upd) - int(sys_upd))
+            # some packages outdated but we don't care
+            status_message = "{0}, packages outdated ({1})".format(
+                status_message, packages_outdated_list
             )
 
-    # exit with check result
-    if options.exclude_pkgs is False:
-        # set list of outdated packages
-        if options.list_pkgs:
-            pkg_list = " ({0})".format(", ".join(outdated))
-        else:
-            pkg_list = ""
-
-        if bool_core is True and bool_pkgs is True:
-            # everything up2date
-            print("OK: Core Update '{0}' and packages for release '{1}' up2date!{2}".format(sys_upd, sys_rel, perfdata))
-            exit(0)
-        if bool_core is True and bool_pkgs is False:
-            print("WARNING: Core Update '{0}' for release '{1}' up2date, but {2} package(s){3} outdated!{4}".format(
-                sys_upd, sys_rel, len(outdated), pkg_list, perfdata)
+    # get performance data
+    if OPTIONS.show_perfdata:
+        # core update
+        perfdata = " | 'system_updates'={0};;;;".format(
+            int(int(CORE_RECENT) - int(CORE_SYSTEM))
+        )
+        # package updates
+        if not OPTIONS.packages_exclude:
+            perfdata = "{0} 'outdated_packages'={1};{2};{3};;".format(
+                perfdata, float(len(packages_outdated)),
+                float(OPTIONS.packages_warning), float(OPTIONS.packages_critical)
             )
-            exit(1)
-        if bool_core is False and bool_pkgs is True:
-            print("WARNING: Core Update '{0}' for release '{1}' outdated (current update: {2})"
-                  ", but packages up2date!{3}".format(sys_upd, sys_rel, cur_upd, perfdata)
-                  )
-            exit(1)
-        else:
-            print("CRITICAL: Core Update '{0}' for release '{1}' outdated (current update: {2}) and {3} package(s)"
-                  "{4} outdated!{5}".format(sys_upd, sys_rel, cur_upd, len(outdated), pkg_list, perfdata)
-                  )
-            exit(2)
+
+    # print output and die in a fire
+    print(
+        "{0}: {1} {2}".format(get_return_string(), status_message, perfdata)
+    )
+    exit(RETURN_CODE)
+
+
+def set_return_code(code):
+    """
+    This functions sets the return to a new value if it is higher
+    Refer to the following possible codes:
+    0: OK
+    1: WARNING
+    2: CRITICAL
+    3: UNKNOWN
+
+    :param code: Nagios/Icinga return code
+    :type code: int
+    """
+    global RETURN_CODE
+    # change return code if higher
+    if code > RETURN_CODE:
+        RETURN_CODE = code
+
+
+def get_return_string():
+    """
+    This function returns the result status based on the state code.
+
+    :return: str
+    """
+    if RETURN_CODE == 3:
+        return_string = "UNKNOWN"
+    elif RETURN_CODE == 2:
+        return_string = "CRITICAL"
+    elif RETURN_CODE == 1:
+        return_string = "WARNING"
     else:
-        # only check core update
-        if bool_core is True:
-            # core up2date
-            print "OK: Core Update '{0}' for release '{1}' up2date!{2}".format(sys_upd, sys_rel, perfdata)
-            exit(0)
-        else:
-            # core outdated
-            print("WARNING: Core Update '{0}' for release '{1}' outdated! (current update: {2}){3}".format(
-                sys_upd, sys_rel, cur_upd, perfdata)
-            )
-            exit(1)
+        return_string = "OK"
+    return return_string
 
-    return False
+
+def parse_options():
+    """
+    Parses options and arguments.
+    :return: parser options
+    """
+    # define description, version and load parser
+    description = '''%prog is used to check a IPFire host for Pakfire updates
+ (core updates and additional packages).'''
+    epilog = '''Check-out the website for more details:
+    http://github.com/stdevel/check_pakfire'''
+    parser = argparse.ArgumentParser(
+        epilog=epilog, description=description, version=__version__
+    )
+
+    gen_opts = parser.add_argument_group("Generic options")
+    net_opts = parser.add_argument_group("Network options")
+    pkg_opts = parser.add_argument_group("Package options")
+
+    # -d / --debug
+    gen_opts.add_argument("-d", "--debug", dest="generic_debug", default=False,
+                          action="store_true", help="enable debugging outputs")
+
+    # -P / --show-perfdata
+    gen_opts.add_argument("-P", "--show-perfdata", dest="show_perfdata",
+                          default=False, action="store_true",
+                          help="enables performance data (default: no)")
+
+    # -e / --exclude-packages
+    pkg_opts.add_argument("-e", "--exclude-packages", dest="packages_exclude",
+                          default=False, action="store_true",
+                          help="disables checking for package updates (default: no)")
+
+    # -w / --packages-warning
+    pkg_opts.add_argument("-w", "--packages-warning", dest="packages_warning", default=1,
+                          action="store", metavar="NUMBER",
+                          help="defines warning threshold for outdated packages (default: 1)")
+
+    # -c / --packages-critical
+    pkg_opts.add_argument("-c", "--packages-critical", dest="packages_critical", default=5,
+                          action="store", metavar="NUMBER",
+                          help="defines critical threshold for outdated packages (default: 5)")
+
+    # -W / --core-warning
+    pkg_opts.add_argument("-W", "--core-warning", dest="core_warning", default=1, action="store",
+                          metavar="NUMBER",
+                          help="defines warning threshold for outdated core (default: 1)")
+
+    # -C / --core-critical
+    pkg_opts.add_argument("-C", "--core-critical", dest="core_critical", default=3, action="store",
+                          metavar="NUMBER",
+                          help="defines critical threshold for outdated core (default: 3)")
+
+    # -m / --mirror
+    net_opts.add_argument("-m", "--mirror", dest="mirrors", default=[], action="append",
+                          metavar="SERVER",
+                          help="defines one or multiple mirrors (default: system mirror list)")
+
+    # parse arguments
+    parser_options = parser.parse_args()
+    return parser_options
 
 
 if __name__ == "__main__":
-    # define description, version and load parser
-    desc = '''%prog is used to check a IPFire host for pakfire updates (core updates and additional packages).
+    # set log level
+    OPTIONS = parse_options()
 
-Checkout the GitHub page for updates: https://github.com/stdevel/check_pakfire'''
-    parser = OptionParser(description=desc, version="%prog version 1.0.9")
-
-    gen_opts = OptionGroup(parser, "Generic options")
-    net_opts = OptionGroup(parser, "Network options")
-    pkg_opts = OptionGroup(parser, "Package options")
-    parser.add_option_group(gen_opts)
-    parser.add_option_group(net_opts)
-    parser.add_option_group(pkg_opts)
-
-    # -d / --debug
-    gen_opts.add_option("-d", "--debug", dest="debug", default=False, action="store_true",
-                        help="enable debugging outputs")
-
-    # -P / --show-perfdata
-    gen_opts.add_option("-P", "--show-perfdata", dest="show_perfdata", default=False, action="store_true",
-                        help="enables performance data, requires -i (default: no)")
-
-    # -l / --list-packages
-    pkg_opts.add_option("-l", "--list-packages", dest="list_pkgs", default=False, action="store_true",
-                        help="lists outdated packages (default: no)")
-
-    # -e / --exclude-packages
-    pkg_opts.add_option("-e", "--exclude-packages", dest="exclude_pkgs", default=False, action="store_true",
-                        help="disables checking for package updates (default: no)")
-
-    # -w / --packages-warning
-    pkg_opts.add_option("-w", "--packages-warning", dest="pkgs_warn", default=5, action="store", metavar="NUMBER",
-                        help="defines warning threshold for outdated packages (default: 5)")
-
-    # -c / --packages-critical
-    pkg_opts.add_option("-c", "--packages-critical", dest="pkgs_crit", default=10, action="store", metavar="NUMBER",
-                        help="defines critical threshold for outdated packages (default: 10)")
-
-    # -m / --mirror
-    net_opts.add_option("-m", "--mirror", dest="mirrors", default=[], action="append", metavar="SERVER",
-                        help="defines one or multiple mirrors (default: system mirror list)")
-
-    # parse arguments
-    (options, args) = parser.parse_args()
-
-    # debug outputs
-    if options.debug:
-        print "OPTIONS: {0}".format(options)
+    # set logging level
+    logging.basicConfig()
+    if OPTIONS.generic_debug:
+        LOG_LEVEL = logging.DEBUG
+    else:
+        LOG_LEVEL = logging.ERROR
+    LOGGER.setLevel(LOG_LEVEL)
+    LOGGER.debug("Options: %s", OPTIONS)
 
     # get system release, core update and package versions
-    (sys_rel, sys_upd) = get_system_version()
-    sys_pkgs = get_local_pkg_versions()
+    (SYSTEM_RELEASE, CORE_SYSTEM) = get_system_version()
+    PACKAGES_SYSTEM = get_local_package_versions()
 
-    # get mirror list
-    if len(options.mirrors) >= 1:
-        mirr_list = options.mirrors
+    # get mirror list from options or system
+    if len(OPTIONS.mirrors) >= 1:
+        MIRROR_LIST = OPTIONS.mirrors
     else:
-        mirr_list = get_mirrorlist()
+        MIRROR_LIST = get_mirror_list()
 
     # get recent versions
-    (cur_upd, cur_pkgs) = get_recent_versions()
+    (CORE_RECENT, PACKAGES_RECENT) = get_recent_versions()
 
     # check for updates
     check_updates()

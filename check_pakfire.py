@@ -12,7 +12,7 @@ import os
 import urllib2
 
 # some global variables
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 LOGGER = logging.getLogger('check_pakfire')
 """
 logging: Logger instance
@@ -160,7 +160,7 @@ def get_recent_versions():
                     )
                     packages_recent.update({this_package: this_version})
             # stop if we got the information
-            if core_recent.group(0) != "" and not packages_recent:
+            if core_recent.group(0) != "" and packages_recent:
                 break
         except IOError as err:
             LOGGER.error(

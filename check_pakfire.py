@@ -12,7 +12,7 @@ import os
 import urllib2
 
 # some global variables
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 LOGGER = logging.getLogger('check_pakfire')
 """
 logging: Logger instance
@@ -177,7 +177,7 @@ def get_recent_versions():
 
 def check_updates():
     """
-    Checks Core and package updates and returns Nagios/Icinga result data
+    Checks Core and package updates and for required reboot and returns Nagios/Icinga result data
     """
     # check _all_ the updates!
     perfdata = ""
@@ -226,15 +226,29 @@ def check_updates():
     # get performance data
     if OPTIONS.show_perfdata:
         # core update
-        perfdata = " | 'system_updates'={0};;;;".format(
-            int(int(CORE_RECENT) - int(CORE_SYSTEM))
+        perfdata = " | 'system_updates'={0};{1};{2};;".format(
+            int(int(CORE_RECENT) - int(CORE_SYSTEM)),
+            int(OPTIONS.core_warning), int(OPTIONS.core_critical)
         )
         # package updates
         if not OPTIONS.packages_exclude:
             perfdata = "{0} 'outdated_packages'={1};{2};{3};;".format(
-                perfdata, float(len(packages_outdated)),
-                float(OPTIONS.packages_warning), float(OPTIONS.packages_critical)
+                perfdata, int(len(packages_outdated)),
+                int(OPTIONS.packages_warning), int(OPTIONS.packages_critical)
             )
+
+    # check if reboot is required
+    if os.path.isfile('/var/run/need_reboot'):
+        if OPTIONS.need_reboot == 'c':
+            status_message = "{0}, system reboot required".format(
+                status_message
+            )
+            set_return_code(2)
+        elif OPTIONS.need_reboot == 'w':
+            status_message = "{0}, system reboot required".format(
+                status_message
+            )
+            set_return_code(1)
 
     # print output and die in a fire
     print(
@@ -312,28 +326,33 @@ def parse_options():
 
     # -w / --packages-warning
     pkg_opts.add_argument("-w", "--packages-warning", dest="packages_warning", default=1,
-                          action="store", metavar="NUMBER",
+                          action="store", type=int, metavar="INTEGER",
                           help="defines warning threshold for outdated packages (default: 1)")
 
     # -c / --packages-critical
     pkg_opts.add_argument("-c", "--packages-critical", dest="packages_critical", default=5,
-                          action="store", metavar="NUMBER",
+                          action="store", type=int, metavar="INTEGER",
                           help="defines critical threshold for outdated packages (default: 5)")
 
     # -W / --core-warning
     pkg_opts.add_argument("-W", "--core-warning", dest="core_warning", default=1, action="store",
-                          metavar="NUMBER",
+                          metavar="INTEGER", type=int,
                           help="defines warning threshold for outdated core (default: 1)")
 
     # -C / --core-critical
     pkg_opts.add_argument("-C", "--core-critical", dest="core_critical", default=3, action="store",
-                          metavar="NUMBER",
+                          metavar="INTEGER", type=int,
                           help="defines critical threshold for outdated core (default: 3)")
 
     # -m / --mirror
     net_opts.add_argument("-m", "--mirror", dest="mirrors", default=[], action="append",
                           metavar="SERVER",
                           help="defines one or multiple mirrors (default: system mirror list)")
+
+    # -n / --need-reboot
+    pkg_opts.add_argument("-n", "--need-reboot", dest="need_reboot", default="w",
+                          action="store", type=str.lower, metavar="w|c",
+                          help="defines exit level if reboot is required (default: w)")
 
     # parse arguments
     parser_options = parser.parse_args()

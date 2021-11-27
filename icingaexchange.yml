@@ -1,3 +1,4 @@
+---
 name: check_pakfire
 description: "file:///README.md"
 url: "https://github.com/stdevel/check_pakfire"
@@ -7,48 +8,38 @@ target: Operating System
 type: Plugin
 license: gplv3
 releases:
-  -
-    name: 1.3.0
+  - name: 1.3.0
     description: "1.3.0 Release"
     files:
-      -
-        name: check_pakfire.py
+      - name: check_pakfire.py
         url: "file:///check_pakfire.py"
         description: "Release 1.3.0"
         checksum: 6fa2b2b64c3d0b8d6e5c44a50c25f70c
-  -
-    name: 1.2.1
+  - name: 1.2.1
     description: "1.2.1 Release"
     files:
-      -
-        name: check_pakfire.py
+      - name: check_pakfire.py
         url: "file:///check_pakfire.py"
         description: "Release 1.2.1"
         checksum: 4486a2a407ec13ad6cd52cfc6e02cb8d
-  -
-    name: 1.2.0
+  - name: 1.2.0
     description: "1.2.0 Release"
     files:
-      -
-        name: check_pakfire.py
+      - name: check_pakfire.py
         url: "file:///check_pakfire.py"
         description: "Release 1.2.0"
         checksum: bf66ca39bada041627051049a54ded1c
-  -
-    name: 1.0.9
+  - name: 1.0.9
     description: "1.0.9 Release"
     files:
-      -
-        name: check_pakfire.py
+      - name: check_pakfire.py
         url: "file:///check_pakfire.py"
         description: "Release 1.0.9"
         checksum: 3e2b13367804d927d1d27297db6d291b
-  - 
-    name: 1.0.8
+  - name: 1.0.8
     description: "1.0.8 Release"
-    files: 
-      - 
-        name: check_pakfire.py
+    files:
+      - name: check_pakfire.py
         url: "file:///check_pakfire.py"
         description: "Release 1.0.8"
         checksum: 90a311d470a4b3d5f1c8be164c62da95

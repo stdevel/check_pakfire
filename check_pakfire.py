@@ -1,18 +1,19 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 A Nagios/Icinga plugin for checking a IPFire host
-# for available Pakfire updates
+for available Pakfire updates
 """
 
 import argparse
 import logging
 import re
 import os
-import urllib2
+from urllib import request
+import sys
 
 # some global variables
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 LOGGER = logging.getLogger('check_pakfire')
 """
 logging: Logger instance
@@ -67,7 +68,7 @@ def get_system_version():
         return [release_system.group(0), core_system.group(0).replace("core", "")]
     except IOError:
         LOGGER.error("System release file not found (is this really a IPFire system?!)")
-        exit(3)
+        sys.exit(3)
 
 
 def get_mirror_list():
@@ -132,9 +133,8 @@ def get_recent_versions():
             # get core update version
             url = mirror + "/lists/core-list.db"
             LOGGER.debug("Accessing URL '%s'", url)
-            request = urllib2.Request(url)
-            result = urllib2.urlopen(request)
-            core_list = result.read()
+            result = request.urlopen(url)
+            core_list = result.read().decode('utf-8')
             core_list = core_list.split()
             for line in core_list:
                 if "core_release" in line:
@@ -146,9 +146,8 @@ def get_recent_versions():
             # get package versions
             url = mirror + "/lists/packages_list.db"
             LOGGER.debug("Accessing URL '%s'", url)
-            request = urllib2.Request(url)
-            result = urllib2.urlopen(request)
-            packages_list = result.read()
+            result = request.urlopen(url)
+            packages_list = result.read().decode('utf-8')
             packages_list = packages_list.split()
             for line in packages_list:
                 if ";" in line:
@@ -170,9 +169,9 @@ def get_recent_versions():
     try:
         return core_recent.group(0), packages_recent
     except AttributeError:
-        print "UNKNOWN: No mirror could be reached for validating " \
-              "updates (hint: proxy or mirror list invalid?)"
-        exit(3)
+        print("UNKNOWN: No mirror could be reached for validating " \
+              "updates (hint: proxy or mirror list invalid?)")
+        sys.exit(3)
 
 
 def check_updates():
@@ -254,7 +253,7 @@ def check_updates():
     print(
         "{0}: {1} {2}".format(get_return_string(), status_message, perfdata)
     )
-    exit(RETURN_CODE)
+    sys.exit(RETURN_CODE)
 
 
 def set_return_code(code):
@@ -298,13 +297,12 @@ def parse_options():
     :return: parser options
     """
     # define description, version and load parser
-    description = '''%prog is used to check a IPFire host for Pakfire updates
+    desc = '''%prog is used to check a IPFire host for Pakfire updates
  (core updates and additional packages).'''
     epilog = '''Check-out the website for more details:
     http://github.com/stdevel/check_pakfire'''
-    parser = argparse.ArgumentParser(
-        epilog=epilog, description=description, version=__version__
-    )
+    parser = argparse.ArgumentParser(description=desc, epilog=epilog)
+    parser.add_argument('--version', action='version', version=__version__)
 
     gen_opts = parser.add_argument_group("Generic options")
     net_opts = parser.add_argument_group("Network options")

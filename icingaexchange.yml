@@ -8,6 +8,13 @@ target: Operating System
 type: Plugin
 license: gplv3
 releases:
+  - name: 1.4.0
+    description: "1.4.0 Release"
+    files:
+      - name: check_pakfire.py
+        url: "file:///check_pakfire.py"
+        description: "Release 1.4.0"
+        checksum: 74c1397e3145c40c16f5fb2a0e634155
   - name: 1.3.0
     description: "1.3.0 Release"
     files:

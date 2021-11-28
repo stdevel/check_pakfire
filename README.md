@@ -1,6 +1,6 @@
 # check_pakfire
 
-``check_pakfire`` is a Nagios / Icinga plugin for checking [IPFire](http://www.ipfire.org) Pakfire updates and required reboots.
+`check_pakfire` is a Nagios / Icinga plugin for checking [IPFire](http://www.ipfire.org) Pakfire updates and required reboots.
 
 ## Requirements
 
@@ -12,7 +12,7 @@ No additional Python packages are required - just deploy the script and use it.
 
 ## Usage
 
-By default, the script checks for core updates and also packages upgrades - it is also possible to only check core updates (*``-e`` / ``--exclude-packages`` parameters*). Gathering performance data (*outdated packages*) can be useful when monitoring a big amount of IPFire systems.
+By default, the script checks for core updates and also packages upgrades - it is also possible to only check core updates (*`-e` / `--exclude-packages` parameters*). Gathering performance data (*outdated packages*) can be useful when monitoring a big amount of IPFire systems.
 
 The following parameters can be specified:
 
